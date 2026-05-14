@@ -7,7 +7,7 @@ use leptos_router::{
     hooks::use_params_map,
 };
 
-use crate::components::GitHubCorner;
+use crate::components::{FileTree, GitHubCorner};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -82,13 +82,6 @@ fn ModSelector() -> impl IntoView {
     view! {
         <h2>"Mod selector (" {move || name()} " - " {move || version().unwrap_or("unknown".into())} ")"</h2>
         <Outlet/>
-    }
-}
-
-#[component]
-fn FileTree() -> impl IntoView {
-    view! {
-        <h2>"File tree"</h2>
     }
 }
 

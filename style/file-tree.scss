@@ -1,0 +1,32 @@
+.filetree {
+    &.pending {
+        cursor: wait;
+    }
+
+    a {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    a::before {
+        content: "📄";
+    }
+
+    a[aria-current="page"] {
+        font-weight: bold;
+    }
+
+    .dir::before {
+        content: "📁" !important;
+    }
+
+    .dir_children {
+        display: none;
+        margin-left: 1em;
+    }
+
+    .dir_children.open {
+        display: block;
+    }
+}
