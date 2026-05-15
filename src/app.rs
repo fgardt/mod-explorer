@@ -1,8 +1,8 @@
 use leptos::prelude::*;
-use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
+use leptos_meta::{MetaTags, Stylesheet, Title, provide_meta_context};
 use leptos_router::{
-    components::{Route, Router, Routes},
     StaticSegment,
+    components::{Route, Router, Routes},
 };
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -12,6 +12,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
             <head>
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <meta name="format-detection" content="telephone=no"/>
                 <AutoReload options=options.clone() />
                 <HydrationScripts options/>
                 <MetaTags/>
@@ -29,14 +30,8 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     view! {
-        // injects a stylesheet into the document <head>
-        // id=leptos means cargo-leptos will hot-reload this stylesheet
         <Stylesheet id="leptos" href="/pkg/mod-explorer.css"/>
-
-        // sets the document title
-        <Title text="Welcome to Leptos"/>
-
-        // content for this welcome page
+        <Title text="Factorio mod explorer"/>
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
@@ -47,15 +42,9 @@ pub fn App() -> impl IntoView {
     }
 }
 
-/// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    // Creates a reactive value to update the button
-    let count = RwSignal::new(0);
-    let on_click = move |_| *count.write() += 1;
-
     view! {
-        <h1>"Welcome to Leptos!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
+        <h1>"Welcome to the Factorio mod explorer!"</h1>
     }
 }
