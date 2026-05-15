@@ -4,10 +4,9 @@ use leptos_router::{
     MatchNestedRoutes, NavigateOptions, ParamSegment, StaticSegment, WildcardSegment,
     any_nested_route::IntoAnyNestedRoute,
     components::{Outlet, ParentRoute, Redirect, Route, Router, Routes},
-    hooks::use_params_map,
 };
 
-use crate::components::{FileTree, GitHubCorner, ModSelector, ModSelectorData};
+use crate::components::{FileTree, FileViewer, GitHubCorner, ModSelector, ModSelectorData};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -80,17 +79,6 @@ fn ModSelectorWithOutlet() -> impl IntoView {
     view! {
         <ModSelector/>
         <Outlet/>
-    }
-}
-
-#[component]
-fn FileViewer() -> impl IntoView {
-    let params = use_params_map();
-    let file_path = move || params.read().get("file_path").unwrap_or_default();
-
-    view! {
-        <h2>"File Viewer"</h2>
-        <p>"Viewing file: " {move || file_path()}</p>
     }
 }
 

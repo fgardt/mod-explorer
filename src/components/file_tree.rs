@@ -193,24 +193,10 @@ async fn get_file_tree(
         return Err(ServerFnError::ServerError("Missing state".into()));
     };
 
-    let version = {
-        let known_versions = state.mods_state.mod_versions.read().await;
-        let Some(known_versions) = known_versions.get(name.as_str()) else {
-            return Err(ServerFnError::ServerError("Unknown mod".into()));
-        };
-
-        if version != "latest" && !known_versions.contains(&version.clone().into()) {
-            return Err(ServerFnError::ServerError("Unknown version".into()));
-        }
-
-        if version == "latest" {
-            known_versions
-                .first()
-                .map(ToString::to_string)
-                .unwrap_or_else(|| "0.0.0".into())
-        } else {
-            version
-        }
+    let Some(version) = state.mods_state.get_version(&name, &version).await else {
+        return Err(ServerFnError::ServerError(
+            "Mod or version not found".into(),
+        ));
     };
 
     let requested_path = path.clone();

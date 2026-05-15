@@ -14,6 +14,21 @@ pub struct ModsState {
     pub mod_versions: Arc<RwLock<HashMap<DedupString, Box<[DedupString]>>>>,
 }
 
+impl ModsState {
+    pub async fn get_version(&self, name: &str, version: &str) -> Option<DedupString> {
+        let mod_versions = self.mod_versions.read().await;
+        let mod_versions = mod_versions.get(name)?;
+
+        match version {
+            "latest" => mod_versions.first().cloned(),
+            v => {
+                let v = v.into();
+                mod_versions.iter().find(|&ver| ver == &v).cloned()
+            }
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub mods_folder: PathBuf,
