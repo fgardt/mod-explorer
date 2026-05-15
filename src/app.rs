@@ -7,7 +7,7 @@ use leptos_router::{
     hooks::use_params_map,
 };
 
-use crate::components::{FileTree, GitHubCorner};
+use crate::components::{FileTree, GitHubCorner, ModSelector, ModSelectorData};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -35,11 +35,12 @@ pub fn App() -> impl IntoView {
 
     view! {
         <Stylesheet id="leptos" href="/pkg/mod-explorer.css"/>
+        <ModSelectorData/>
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=HomePage/>
-                    <ParentRoute path=StaticSegment("i") view=ModSelector>
+                    <ParentRoute path=StaticSegment("i") view=ModSelectorWithOutlet>
                         <ExplorerRoutes/>
                         <Route path=StaticSegment("") view=RedirectToRoot/>
                     </ParentRoute>
@@ -55,6 +56,7 @@ fn HomePage() -> impl IntoView {
         <Title text="Factorio mod explorer"/>
         <h1>"Welcome to the Factorio mod explorer!"</h1>
         <GitHubCorner repo="fgardt/mod-explorer"/>
+        <ModSelector/>
     }
 }
 
@@ -74,13 +76,9 @@ fn ExplorerRoutes() -> impl MatchNestedRoutes + Clone {
 }
 
 #[component]
-fn ModSelector() -> impl IntoView {
-    let params = use_params_map();
-    let name = move || params.read().get("name").unwrap_or_default();
-    let version = move || params.read().get("version");
-
+fn ModSelectorWithOutlet() -> impl IntoView {
     view! {
-        <h2>"Mod selector (" {move || name()} " - " {move || version().unwrap_or("unknown".into())} ")"</h2>
+        <ModSelector/>
         <Outlet/>
     }
 }
