@@ -6,7 +6,11 @@ use leptos_router::{
     components::{Outlet, ParentRoute, Redirect, Route, Router, Routes},
 };
 
-use crate::components::{FileTree, FileViewer, GitHubCorner, ModSelector, ModSelectorData};
+use crate::components;
+
+use components::GitHubCorner;
+use components::{EmptyFileViewer, FileTree, FileViewer};
+use components::{ModSelector, ModSelectorData};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -36,15 +40,13 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/mod-explorer.css"/>
         <ModSelectorData/>
         <Router>
-            <main>
-                <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage/>
-                    <ParentRoute path=StaticSegment("i") view=ModSelectorWithOutlet>
-                        <ExplorerRoutes/>
-                        <Route path=StaticSegment("") view=RedirectToRoot/>
-                    </ParentRoute>
-                </Routes>
-            </main>
+            <Routes fallback=|| "Page not found.".into_view()>
+                <Route path=StaticSegment("") view=HomePage/>
+                <ParentRoute path=StaticSegment("i") view=ModSelectorWithOutlet>
+                    <ExplorerRoutes/>
+                    <Route path=StaticSegment("") view=RedirectToRoot/>
+                </ParentRoute>
+            </Routes>
         </Router>
     }
 }
@@ -64,8 +66,8 @@ fn ExplorerRoutes() -> impl MatchNestedRoutes + Clone {
     view! {
         <ParentRoute path=ParamSegment("name") view=Outlet>
             <Route path=StaticSegment("") view=RedirectToLatest/>
-            <ParentRoute path=ParamSegment("version") view=FileTree>
-                <Route path=StaticSegment("") view=||"select file to view".into_view()/>
+            <ParentRoute path=ParamSegment("version") view=FileTreeWithOutlet>
+                <Route path=StaticSegment("") view=EmptyFileViewer/>
                 <Route path=WildcardSegment("file_path") view=FileViewer/>
             </ParentRoute>
         </ParentRoute>
@@ -77,8 +79,20 @@ fn ExplorerRoutes() -> impl MatchNestedRoutes + Clone {
 #[component]
 fn ModSelectorWithOutlet() -> impl IntoView {
     view! {
-        <ModSelector/>
+        <div class="top-bar">
+            <ModSelector/>
+        </div>
         <Outlet/>
+    }
+}
+
+#[component]
+fn FileTreeWithOutlet() -> impl IntoView {
+    view! {
+        <div class="explorer">
+            <FileTree/>
+            <Outlet/>
+        </div>
     }
 }
 

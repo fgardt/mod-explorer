@@ -2,6 +2,15 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 
 #[component]
+pub fn EmptyFileViewer() -> impl IntoView {
+    view! {
+        <div class="fileviewer empty">
+            <p>"Select a file to view its contents"</p>
+        </div>
+    }
+}
+
+#[component]
 pub fn FileViewer() -> impl IntoView {
     let params = use_params_map();
     let name = move || params.read().get("name").unwrap_or_default();
@@ -13,20 +22,28 @@ pub fn FileViewer() -> impl IntoView {
         async |(name, version, file_path)| fetch_file(name, version, file_path).await,
     );
 
+    let (pending, set_pending) = RwSignal::new(false).split();
+
     view! {
-        <h2>"File Viewer"</h2>
-        <Transition fallback=|| "Loading...".into_view()>
-            <p>"Viewing file: " {move || file_path()}</p>
-            {move || {
-                file_content.get().map(|res| match res {
-                    Ok(content) => view! {
-                        <textarea cols=240 rows=80 readonly=true>{content}</textarea>
-                    }.into_any(),
-                    Err(ServerFnError::ServerError(msg)) => msg.into_view().into_any(),
-                    Err(e) => format!("{e}").into_view().into_any(),
-                })
-            }}
-        </Transition>
+        <div class="fileviewer">
+            <Transition set_pending=set_pending fallback=move || view! {
+                <p class="filename">{move || file_path()}</p>
+                <textarea class="loading" readonly=true></textarea>
+            }>
+                <p class="filename">{move || file_path()}</p>
+                <div class="content" class:pending=pending>
+                {move || {
+                    file_content.get().map(|res| match res {
+                        Ok(content) => view! {
+                            {content}
+                        }.into_any(),
+                        Err(ServerFnError::ServerError(msg)) => msg.into_view().into_any(),
+                        Err(e) => format!("{e}").into_view().into_any(),
+                    })
+                }}
+                </div>
+            </Transition>
+        </div>
     }
 }
 

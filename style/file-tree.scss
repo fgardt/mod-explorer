@@ -1,6 +1,21 @@
 .filetree {
-    &.pending {
-        cursor: wait;
+    overflow: auto;
+    min-width: 20rem;
+    max-width: 20rem;
+
+    padding: 1em 0.5em;
+
+    user-select: none;
+
+    a,
+    .dir {
+        padding: 0.125em 0.25em;
+
+        cursor: pointer;
+
+        &:hover {
+            background: #333;
+        }
     }
 
     a {
@@ -14,7 +29,7 @@
     }
 
     a[aria-current="page"] {
-        font-weight: bold;
+        font-weight: 900;
     }
 
     .dir::before {

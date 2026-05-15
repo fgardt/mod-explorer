@@ -1,9 +1,6 @@
 use leptos::prelude::*;
 use leptos_meta::Title;
-use leptos_router::{
-    components::{A, Outlet},
-    hooks::use_params_map,
-};
+use leptos_router::{components::A, hooks::use_params_map};
 use serde::{Deserialize, Serialize};
 
 #[component]
@@ -39,7 +36,6 @@ pub fn FileTree() -> impl IntoView {
 
     view! {
         <Title text=title />
-        <h2>"File tree"</h2>
         <div class="filetree" class:pending=pending>
             <Transition
                 fallback=|| "Loading...".into_view()
@@ -54,7 +50,6 @@ pub fn FileTree() -> impl IntoView {
                 }}
             </Transition>
         </div>
-        <Outlet/>
     }
 }
 

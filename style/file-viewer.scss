@@ -1,0 +1,37 @@
+.fileviewer {
+    flex: 1;
+
+    &>.filename {
+        font-weight: 600;
+        padding: 0.75em;
+        margin: 0.25em 0;
+
+        width: fit-content;
+        user-select: none;
+    }
+
+    &>.content {
+        max-height: 95vh;
+        max-width: 100%;
+
+        padding: 0.75em;
+        margin-left: 0.5em;
+        border: none;
+
+        overflow: auto;
+
+        background: transparent;
+        color: white;
+
+        white-space: preserve nowrap;
+        line-break: strict;
+
+        font-family: monospace;
+
+        &::after {
+            height: 15rem;
+            display: block;
+            content: "";
+        }
+    }
+}
