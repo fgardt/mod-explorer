@@ -132,7 +132,7 @@ impl FileTreeNode {
                 let version = version.clone();
 
                 view! {
-                    <a class="dir" on:click=move |_| set_open.update(|s| *s = !*s)>{dirname.clone()} " (lazy)"</a>
+                    <a class="dir" on:click=move |_| set_open.update(|s| *s = !*s)>{dirname.clone()}</a>
                     <div class="dir_children" class:open=open>
                         {move || if open.get() && !loaded.get() {
                             set_loaded.set(true);
@@ -151,6 +151,13 @@ impl FileTreeNode {
                     </div>
                 }.into_any()
             }
+        }
+    }
+
+    #[inline]
+    const fn name(&self) -> &str {
+        match self {
+            Self::File(n) | Self::Dir(n, _) | Self::EmptyDir(n) | Self::LazyDir(n) => n.as_str(),
         }
     }
 }
@@ -180,36 +187,109 @@ async fn get_file_tree(
     version: String,
     path: String,
 ) -> Result<FileTreeNode, ServerFnError> {
-    let path = path
-        .split('/')
-        .filter(|s| !s.is_empty() && *s != "." && *s != "..")
-        .collect::<Vec<_>>()
-        .join("/");
+    use std::path::{Component, PathBuf};
 
-    let test_tree = FileTreeNode::Dir(
-        "".into(),
-        vec![
-            FileTreeNode::File("file1.txt".into()),
-            FileTreeNode::Dir(
-                "subdir".into(),
-                vec![FileTreeNode::File("file2.txt".into())],
-            ),
-            FileTreeNode::EmptyDir("empty_subdir".into()),
-            FileTreeNode::LazyDir("lazy_subdir".into()),
-        ],
-    );
+    let Some(state) = use_context::<crate::state::AppState>() else {
+        return Err(ServerFnError::ServerError("Missing state".into()));
+    };
 
-    let lazy_subdir_contents = FileTreeNode::Dir(
-        "lazy_subdir".into(),
-        vec![
-            FileTreeNode::File("i_got_lazy.txt".into()),
-            FileTreeNode::File("me_too.txt".into()),
-            FileTreeNode::Dir("nested".into(), vec![FileTreeNode::File("deep.txt".into())]),
-        ],
-    );
+    let version = {
+        let known_versions = state.mods_state.mod_versions.read().await;
+        let Some(known_versions) = known_versions.get(name.as_str()) else {
+            return Err(ServerFnError::ServerError("Unknown mod".into()));
+        };
 
-    match path.as_str() {
-        "lazy_subdir" => Ok(lazy_subdir_contents),
-        _ => Ok(test_tree),
+        if version != "latest" && !known_versions.contains(&version.clone().into()) {
+            return Err(ServerFnError::ServerError("Unknown version".into()));
+        }
+
+        if version == "latest" {
+            known_versions
+                .first()
+                .map(ToString::to_string)
+                .unwrap_or_else(|| "0.0.0".into())
+        } else {
+            version
+        }
+    };
+
+    let requested_path = path.clone();
+    let path = PathBuf::from(path);
+    if path.components().any(|c| {
+        matches!(
+            c,
+            Component::ParentDir | Component::Prefix(_) | Component::RootDir
+        )
+    }) {
+        return Err(ServerFnError::ServerError("Invalid path".into()));
     }
+
+    let path = state
+        .mods_folder
+        .join(format!("{name}_{version}"))
+        .join(path);
+
+    println!("Reading directory: {}", path.display());
+
+    let mut node_count = 0;
+    match read_dir_to_nodes(path, &mut node_count).await {
+        Err(e) => Err(ServerFnError::ServerError(format!(
+            "Failed to read directory: {e}"
+        ))),
+        Ok(nodes) => Ok(FileTreeNode::Dir(requested_path, nodes)),
+    }
+}
+
+#[cfg(feature = "ssr")]
+async fn read_dir_to_nodes<P: AsRef<std::path::Path>>(
+    path: P,
+    node_count: &mut usize,
+) -> std::io::Result<Vec<FileTreeNode>> {
+    const NODE_LAZY_THRESHOLD: usize = 25;
+
+    let mut nodes = Vec::new();
+    let mut entries = tokio::fs::read_dir(path).await?;
+
+    let mut files = Vec::new();
+    let mut dirs = Vec::new();
+
+    while let Some(entry) = entries.next_entry().await? {
+        let kind = entry.file_type().await?;
+        let path = entry.path();
+        let name = entry.file_name().to_string_lossy().to_string();
+
+        if kind.is_file() {
+            files.push(name);
+        } else if kind.is_dir() {
+            dirs.push((name, path));
+        } else {
+            continue;
+        }
+
+        *node_count += 1;
+    }
+
+    dirs.sort_by_key(|(n, _)| n.to_lowercase());
+
+    for (name, path) in dirs {
+        if *node_count >= NODE_LAZY_THRESHOLD {
+            nodes.push(FileTreeNode::LazyDir(name));
+        } else {
+            let mut children = Box::pin(read_dir_to_nodes(path, node_count)).await?;
+            children.sort_by_key(|c| c.name().to_string());
+
+            if children.is_empty() {
+                nodes.push(FileTreeNode::EmptyDir(name));
+            } else {
+                nodes.push(FileTreeNode::Dir(name, children));
+            }
+        }
+    }
+
+    files.sort_by_cached_key(|n| n.to_lowercase());
+    for name in files {
+        nodes.push(FileTreeNode::File(name));
+    }
+
+    Ok(nodes)
 }

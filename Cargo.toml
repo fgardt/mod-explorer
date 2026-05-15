@@ -14,13 +14,15 @@ leptos_axum = { version = "0.8", optional = true }
 wasm-bindgen = { version = "=0.2.121", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 axum = { version = "0.8", optional = true }
-tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "fs"], optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"], optional = true }
 
 [features]
 hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
 ssr = [
     "dep:axum",
+    "dep:clap",
     "dep:tokio",
     "dep:leptos_axum",
     "leptos/ssr",

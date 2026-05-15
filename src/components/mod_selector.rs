@@ -108,11 +108,38 @@ pub fn ModSelector() -> impl IntoView {
 
 #[server]
 async fn get_available_mods() -> Result<Box<[String]>, ServerFnError> {
-    Ok(vec!["example_mod".into(), "another_mod".into()].into_boxed_slice())
+    let Some(state) = use_context::<crate::state::AppState>() else {
+        return Err(ServerFnError::ServerError("Missing state".into()));
+    };
+
+    let state = state.mods_state;
+
+    let mods = state
+        .all_mods
+        .read()
+        .await
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Box<_>>();
+
+    Ok(mods)
 }
 
 #[server]
 async fn get_mod_versions(name: String) -> Result<Box<[String]>, ServerFnError> {
-    let versions: Vec<String> = vec!["2.0.0".into(), "1.1.0".into(), "1.0.0".into()];
-    Ok(versions.into_boxed_slice())
+    let Some(state) = use_context::<crate::state::AppState>() else {
+        return Err(ServerFnError::ServerError("Missing state".into()));
+    };
+
+    let state = state.mods_state;
+
+    let versions = state.mod_versions.read().await;
+    let Some(versions) = versions.get(name.as_str()) else {
+        return Err(ServerFnError::ServerError(format!(
+            "Unknown mod \"{name}\""
+        )));
+    };
+
+    let versions = versions.iter().map(|s| s.to_string()).collect::<Box<_>>();
+    Ok(versions)
 }
