@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use leptos_meta::Title;
 use leptos_router::{
     components::{A, Outlet},
     hooks::use_params_map,
@@ -10,6 +11,16 @@ pub fn FileTree() -> impl IntoView {
     let params = use_params_map();
     let name = move || params.read().get("name").unwrap_or_default();
     let version = move || params.read().get("version").unwrap_or("latest".into());
+    let path = move || params.read().get("file_path").unwrap_or_default();
+
+    let title = move || {
+        let path = path();
+        if path.is_empty() {
+            return name();
+        }
+
+        format!("{}/{path}", name())
+    };
 
     let name_untracked = move || params.read_untracked().get("name").unwrap_or_default();
     let version_untracked = move || {
@@ -27,6 +38,7 @@ pub fn FileTree() -> impl IntoView {
     );
 
     view! {
+        <Title text=title />
         <h2>"File tree"</h2>
         <div class="filetree" class:pending=pending>
             <Transition

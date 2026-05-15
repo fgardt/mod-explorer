@@ -35,7 +35,6 @@ pub fn App() -> impl IntoView {
 
     view! {
         <Stylesheet id="leptos" href="/pkg/mod-explorer.css"/>
-        <Title text="Factorio mod explorer"/>
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
@@ -53,6 +52,7 @@ pub fn App() -> impl IntoView {
 #[component]
 fn HomePage() -> impl IntoView {
     view! {
+        <Title text="Factorio mod explorer"/>
         <h1>"Welcome to the Factorio mod explorer!"</h1>
         <GitHubCorner repo="fgardt/mod-explorer"/>
     }
