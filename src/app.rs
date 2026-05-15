@@ -5,6 +5,8 @@ use leptos_router::{
     components::{Route, Router, Routes},
 };
 
+use crate::components::GitHubCorner;
+
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
         <!DOCTYPE html>
@@ -46,5 +48,6 @@ pub fn App() -> impl IntoView {
 fn HomePage() -> impl IntoView {
     view! {
         <h1>"Welcome to the Factorio mod explorer!"</h1>
+        <GitHubCorner repo="fgardt/mod-explorer"/>
     }
 }
