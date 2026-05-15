@@ -30,6 +30,7 @@ pub fn ModSelector() -> impl IntoView {
     let params = use_params_map();
     let name = move || params.read().get("name").unwrap_or_default();
     let version = move || params.read().get("version");
+    let path = move || params.read().get("file_path");
 
     let available_versions = Resource::new(name, async move |name| {
         if name.is_empty() {
@@ -43,33 +44,42 @@ pub fn ModSelector() -> impl IntoView {
     });
 
     let name_ref: NodeRef<html::Input> = NodeRef::new();
-    let (selected_version, set_selected_version) = RwSignal::new(None).split();
-
-    let trigger_nav = move || {
+    let nav_target = move |version: &str| {
         let name = name_ref
             .get()
             .expect("name <input> should be mounted")
             .value();
-        let version = selected_version.get().unwrap_or("latest".into());
-
-        if !name.is_empty() {
-            let navigate = use_navigate();
-            navigate(&format!("/i/{name}/{version}"), Default::default());
-        }
+        format!("/i/{name}/{version}")
     };
 
     view! {
         <form on:submit=move |ev| {
             ev.prevent_default();
-            trigger_nav();
+
+            if !name().is_empty() {
+                let navigate = use_navigate();
+                navigate(&nav_target("latest"), Default::default());
+            }
         }>
             <input type="text" list="mods" node_ref=name_ref placeholder="Search for mod" value=move ||{name()}/>
             {move || {
                 if let Some(version) = version() {
                     view! {
                         <select prop:value=version on:change:target=move |ev| {
-                            set_selected_version.set(Some(ev.target().value()));
-                            trigger_nav();
+                            if !name().is_empty() {
+                                let version = ev.target().value();
+
+                                let mut target = nav_target(version.as_str());
+                                if let Some(path) = path()
+                                    && !path.is_empty()
+                                {
+                                    target.push('/');
+                                    target.push_str(&path);
+                                }
+
+                                let navigate = use_navigate();
+                                navigate(&target, Default::default());
+                            }
                         }>
                             <Suspense fallback=|| view! {
                                 <option value="latest">"latest (?.?.?)"</option>
