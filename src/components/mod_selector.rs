@@ -49,16 +49,21 @@ pub fn ModSelector() -> impl IntoView {
             .get()
             .expect("name <input> should be mounted")
             .value();
-        format!("/i/{name}/{version}")
+
+        if name.is_empty() {
+            None
+        } else {
+            Some(format!("/i/{name}/{version}"))
+        }
     };
 
     view! {
         <form on:submit=move |ev| {
             ev.prevent_default();
 
-            if !name().is_empty() {
+            if let Some(target) = nav_target("latest") {
                 let navigate = use_navigate();
-                navigate(&nav_target("latest"), Default::default());
+                navigate(&target, Default::default());
             }
         }>
             <input type="text" list="mods" node_ref=name_ref placeholder="Search for mod" value=move ||{name()}/>
@@ -66,10 +71,12 @@ pub fn ModSelector() -> impl IntoView {
                 if let Some(version) = version() {
                     view! {
                         <select prop:value=version on:change:target=move |ev| {
-                            if !name().is_empty() {
                                 let version = ev.target().value();
 
-                                let mut target = nav_target(version.as_str());
+                                let Some(mut target) = nav_target(version.as_str()) else {
+                                    return;
+                                };
+
                                 if let Some(path) = path()
                                     && !path.is_empty()
                                 {
@@ -79,7 +86,6 @@ pub fn ModSelector() -> impl IntoView {
 
                                 let navigate = use_navigate();
                                 navigate(&target, Default::default());
-                            }
                         }>
                             <Suspense fallback=|| view! {
                                 <option value="latest">"latest (?.?.?)"</option>
