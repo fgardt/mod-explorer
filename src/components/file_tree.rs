@@ -176,7 +176,7 @@ fn LazyDirInner(name: String, version: String, path: String) -> impl IntoView {
     })
 }
 
-#[server]
+#[server(prefix = "/api/sec")]
 async fn get_file_tree(
     name: String,
     version: String,

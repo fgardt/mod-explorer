@@ -3,10 +3,11 @@ use leptos_meta::{MetaTags, Stylesheet, Title, provide_meta_context};
 use leptos_router::{
     MatchNestedRoutes, NavigateOptions, ParamSegment, StaticSegment, WildcardSegment,
     any_nested_route::IntoAnyNestedRoute,
-    components::{Outlet, ParentRoute, Redirect, Route, Router, Routes},
+    components::{Outlet, ParentRoute, ProtectedParentRoute, Redirect, Route, Router, Routes},
+    hooks::use_location,
 };
 
-use crate::components;
+use crate::{auth, components};
 
 use components::GitHubCorner;
 use components::{EmptyFileViewer, FileTree, FileViewer};
@@ -36,16 +37,54 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
+    let session = Resource::new(|| {}, async |_| auth::session::get_session_data().await);
+
+    let auth_check = move || {
+        session
+            .get()
+            .and_then(|s| s.ok())
+            .map(|session| match session {
+                Some(session) => {
+                    provide_context(session);
+                    true
+                }
+                None => false,
+            })
+    };
+    let redirect_path = || {
+        let location = use_location();
+        let path = location.pathname.read_untracked();
+        let query = location.search.read_untracked();
+        let hash = location.hash.read_untracked();
+
+        let mut target = path.to_string();
+        if !query.is_empty() {
+            target.push('?');
+            target.push_str(&query);
+        }
+
+        if !hash.is_empty() {
+            if !hash.starts_with('#') {
+                target.push('#');
+            }
+            target.push_str(&hash);
+        }
+
+        let target = urlencoding::encode(&target);
+        format!("/auth/login?next={target}")
+    };
+
     view! {
         <Stylesheet id="leptos" href="/pkg/mod-explorer.css"/>
         <ModSelectorData/>
         <Router>
             <Routes fallback=|| "Page not found.".into_view()>
                 <Route path=StaticSegment("") view=HomePage/>
-                <ParentRoute path=StaticSegment("i") view=ModSelectorWithOutlet>
+                <Route path=(StaticSegment("auth"), WildcardSegment("_unused")) view=Reload/>
+                <ProtectedParentRoute path=StaticSegment("i") view=ModSelectorWithOutlet condition=auth_check redirect_path=redirect_path>
                     <ExplorerRoutes/>
                     <Route path=StaticSegment("") view=RedirectToRoot/>
-                </ParentRoute>
+                </ProtectedParentRoute>
             </Routes>
         </Router>
     }
@@ -59,6 +98,15 @@ fn HomePage() -> impl IntoView {
         <GitHubCorner repo="fgardt/mod-explorer"/>
         <ModSelector/>
     }
+}
+
+#[component]
+fn Reload() -> impl IntoView {
+    Effect::new(|| {
+        location().reload().unwrap();
+    });
+
+    ().into_view()
 }
 
 #[component(transparent)]

@@ -1,11 +1,18 @@
 #[cfg(feature = "ssr")]
+use std::process::ExitCode;
+
+#[cfg(feature = "ssr")]
 use mod_explorer::state::AppState;
 
 #[cfg(feature = "ssr")]
+use mod_explorer::auth;
+
+#[cfg(feature = "ssr")]
 #[tokio::main]
-async fn main() {
+async fn main() -> ExitCode {
     use std::{net::SocketAddr, path::PathBuf};
 
+    use auth::{AuthConfig, AuthRoutes as _};
     use axum::Router;
     use clap::Parser;
     use leptos::logging::log;
@@ -23,9 +30,32 @@ async fn main() {
 
         #[clap(long, default_value = "60")]
         pub scan_interval: u64,
+
+        #[clap(long)]
+        pub auth_config: Option<PathBuf>,
     }
 
     let cli = Cli::parse();
+
+    let auth_config = if let Some(path) = cli.auth_config {
+        let c = match std::fs::read_to_string(path) {
+            Ok(contents) => contents,
+            Err(e) => {
+                eprintln!("Failed to read auth config file: {e}");
+                return ExitCode::FAILURE;
+            }
+        };
+
+        match toml::from_str::<AuthConfig>(&c) {
+            Ok(config) => Some(config),
+            Err(e) => {
+                eprintln!("Failed to parse auth config file: {e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    } else {
+        None
+    };
 
     let conf = get_configuration(None).unwrap();
     let mut leptos_options = conf.leptos_options;
@@ -51,13 +81,27 @@ async fn main() {
         .fallback(leptos_axum::file_and_error_handler(shell))
         .with_state(leptos_options);
 
-    // run our app with hyper
-    // `axum::Server` is a re-export of `hyper::Server`
+    let app_service = match auth_config {
+        None => app.into_make_service(),
+        Some(mut config) => {
+            // TODO: keeping this in sync by hand is annoying & error-prone, should be generated from route list
+            let protected = vec!["/i/".into(), "/api/sec/".into()].into_boxed_slice();
+            config.route.protected_prefixes = protected;
+
+            let session_store = tower_sessions::MemoryStore::default();
+            let session_manager = tower_sessions::SessionManagerLayer::new(session_store);
+
+            app.use_factorio_auth(config)
+                .layer(session_manager)
+                .into_make_service()
+        }
+    };
+
     log!("listening on http://{}", &cli.addr);
     let listener = tokio::net::TcpListener::bind(&cli.addr).await.unwrap();
-    axum::serve(listener, app.into_make_service())
-        .await
-        .unwrap();
+    axum::serve(listener, app_service).await.unwrap();
+
+    ExitCode::SUCCESS
 }
 
 #[cfg(feature = "ssr")]

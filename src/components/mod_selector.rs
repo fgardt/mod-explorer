@@ -141,7 +141,7 @@ async fn get_available_mods() -> Result<Box<[String]>, ServerFnError> {
     Ok(mods)
 }
 
-#[server]
+#[server(prefix = "/api/sec")]
 async fn get_mod_versions(name: String) -> Result<Box<[String]>, ServerFnError> {
     let Some(state) = use_context::<crate::state::AppState>() else {
         return Err(ServerFnError::ServerError("Missing state".into()));

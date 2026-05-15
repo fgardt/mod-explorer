@@ -47,7 +47,7 @@ pub fn FileViewer() -> impl IntoView {
     }
 }
 
-#[server]
+#[server(prefix = "/api/sec")]
 pub async fn fetch_file(
     name: String,
     version: String,
