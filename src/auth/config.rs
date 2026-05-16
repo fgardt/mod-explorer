@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use serde::Deserialize;
 use url::Url;
 
@@ -29,8 +31,11 @@ pub struct RouteConfig {
 
 #[derive(Clone, Deserialize)]
 pub struct SessionConfig {
+    pub storage_path: Option<PathBuf>,
     pub cookie_name: String,
-    pub cookie_secret: String,
+    #[serde(default)]
+    pub cookie_insecure: bool,
+    pub timeout_seconds: u64,
 }
 
 impl Config {

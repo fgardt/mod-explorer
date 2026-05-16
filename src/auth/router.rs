@@ -1,10 +1,13 @@
-use super::config::RouteConfig;
+use std::time::Duration;
 
 use super::AuthConfig;
+use super::config::RouteConfig;
 use super::provider::Provider;
 
 mod endpoints;
 mod middleware;
+
+const SESSION_KEY: &str = "auth";
 
 #[derive(Clone)]
 pub struct AuthState {
@@ -33,6 +36,10 @@ pub trait AuthRoutes {
 
 impl AuthRoutes for axum::Router {
     fn use_factorio_auth(self, config: AuthConfig) -> axum::Router {
+        use tower_sessions::cookie::SameSite;
+        use tower_sessions::{ExpiredDeletion, Expiry, cookie};
+        use tower_sessions_file_store::FileSessionStorage;
+
         let state = AuthState::new(&config);
 
         let auth_router = axum::Router::new()
@@ -49,10 +56,26 @@ impl AuthRoutes for axum::Router {
             middleware::authentication_check,
         ));
 
-        let session_store = tower_sessions::MemoryStore::default();
+        let session_store = if let Some(path) = config.session.storage_path {
+            FileSessionStorage::new_in_folder(path)
+        } else {
+            FileSessionStorage::new()
+        }
+        .set_minimum_expiry_date(Duration::from_secs(config.session.timeout_seconds));
+
+        tokio::task::spawn(
+            session_store
+                .clone()
+                .continuously_delete_expired(Duration::from_secs(60)),
+        );
+
+        let max_age = config.session.timeout_seconds + (config.session.timeout_seconds >> 2);
+        let cookie_clock = cookie::time::Duration::seconds(max_age as i64);
         let session_manager = tower_sessions::SessionManagerLayer::new(session_store)
             .with_name(config.session.cookie_name)
-            .with_secure(false);
+            .with_secure(!config.session.cookie_insecure)
+            .with_same_site(SameSite::Strict)
+            .with_expiry(Expiry::OnInactivity(cookie_clock));
 
         Self::new()
             .merge(auth_router)

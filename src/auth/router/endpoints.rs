@@ -10,7 +10,7 @@ use super::{
         profile::{FetchProfile as _, MainProfile, ModPortalProfile},
         session::SessionData,
     },
-    AuthState,
+    AuthState, SESSION_KEY,
 };
 
 #[derive(serde::Deserialize)]
@@ -92,7 +92,7 @@ pub async fn callback(
         public_data: portal_profile.into(),
     };
 
-    if let Err(e) = session.insert(&state.cookie_name, session_data).await {
+    if let Err(e) = session.insert(SESSION_KEY, session_data).await {
         eprintln!("Failed to store session data: {e}");
         return Err((
             StatusCode::INTERNAL_SERVER_ERROR,

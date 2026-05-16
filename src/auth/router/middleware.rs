@@ -8,6 +8,8 @@ use axum::{
 };
 use tower_sessions::Session;
 
+use super::SESSION_KEY;
+
 use super::{super::session::SessionData, AuthState};
 
 pub async fn authentication_check(
@@ -29,7 +31,7 @@ pub async fn authentication_check(
     }
 
     let cookie_name = &state.cookie_name;
-    let Some(session_data) = session.get::<SessionData>(cookie_name).await.ok().flatten() else {
+    let Some(session_data) = session.get::<SessionData>(SESSION_KEY).await.ok().flatten() else {
         // no session, but protected
 
         // don't redirect server_fns
@@ -45,7 +47,7 @@ pub async fn authentication_check(
     };
 
     if session_data.token.is_expired() {
-        session.remove::<SessionData>(cookie_name).await.ok();
+        session.remove::<SessionData>(SESSION_KEY).await.ok();
         return redirect_to_login(&state.route_config.prefix, uri);
     }
 
@@ -62,7 +64,7 @@ pub async fn authentication_check(
             }
             Err(e) => {
                 eprintln!("Failed to refresh token: {e}");
-                session.remove::<SessionData>(cookie_name).await.ok();
+                session.remove::<SessionData>(SESSION_KEY).await.ok();
                 return redirect_to_login(&state.route_config.prefix, uri);
             }
         }
