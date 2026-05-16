@@ -34,7 +34,7 @@ pub async fn authentication_check(
 
         // don't redirect server_fns
         // TODO: get prefix from leptos_options
-        if path.starts_with("/api") {
+        if path.starts_with("/api/") {
             return Response::builder()
                 .status(StatusCode::UNAUTHORIZED)
                 .body(Body::from("Unauthorized"))

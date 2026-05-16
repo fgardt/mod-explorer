@@ -88,12 +88,7 @@ async fn main() -> ExitCode {
             let protected = vec!["/i/".into(), "/api/sec/".into()].into_boxed_slice();
             config.route.protected_prefixes = protected;
 
-            let session_store = tower_sessions::MemoryStore::default();
-            let session_manager = tower_sessions::SessionManagerLayer::new(session_store);
-
-            app.use_factorio_auth(config)
-                .layer(session_manager)
-                .into_make_service()
+            app.use_factorio_auth(config).into_make_service()
         }
     };
 

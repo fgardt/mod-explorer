@@ -1,7 +1,3 @@
-use tower_sessions_cookie_store::{
-    CookieSessionConfig, CookieSessionManagerLayer, Key, SameSite, SignedCookie,
-};
-
 use super::config::RouteConfig;
 
 use super::AuthConfig;
@@ -39,8 +35,6 @@ impl AuthRoutes for axum::Router {
     fn use_factorio_auth(self, config: AuthConfig) -> axum::Router {
         let state = AuthState::new(&config);
 
-        let cookies = create_cookie_layer(config.session.cookie_name, config.session.cookie_secret);
-
         let auth_router = axum::Router::new()
             .nest(
                 &config.route.prefix,
@@ -55,19 +49,14 @@ impl AuthRoutes for axum::Router {
             middleware::authentication_check,
         ));
 
+        let session_store = tower_sessions::MemoryStore::default();
+        let session_manager = tower_sessions::SessionManagerLayer::new(session_store)
+            .with_name(config.session.cookie_name)
+            .with_secure(false);
+
         Self::new()
             .merge(auth_router)
             .merge(extended)
-            .layer(cookies)
+            .layer(session_manager)
     }
-}
-
-fn create_cookie_layer(name: String, secret: String) -> CookieSessionManagerLayer<SignedCookie> {
-    let config = CookieSessionConfig::default()
-        // .with_secure(!cfg!(debug_assertions))
-        .with_secure(false)
-        .with_same_site(SameSite::Lax)
-        .with_name(name);
-    let key = Key::from(secret.as_bytes());
-    CookieSessionManagerLayer::signed(key).with_config(config)
 }

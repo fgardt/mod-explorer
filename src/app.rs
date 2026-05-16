@@ -52,10 +52,10 @@ pub fn App() -> impl IntoView {
             })
     };
     let redirect_path = || {
-        let location = use_location();
-        let path = location.pathname.read_untracked();
-        let query = location.search.read_untracked();
-        let hash = location.hash.read_untracked();
+        let current = use_location();
+        let path = current.pathname.read_untracked();
+        let query = current.search.read_untracked();
+        let hash = current.hash.read_untracked();
 
         let mut target = path.to_string();
         if !query.is_empty() {
@@ -71,7 +71,23 @@ pub fn App() -> impl IntoView {
         }
 
         let target = urlencoding::encode(&target);
-        format!("/auth/login?next={target}")
+        let target = format!("/auth/login?next={target}");
+
+        // this is hacky but it forces an actual reload
+        // instead of leptos client-side routing
+        // since redirect_path only gets called when
+        // it is actually required to redirect
+        let instant_target = target.clone();
+        Effect::new(move || {
+            let loc = location();
+            let proto = loc.protocol().unwrap();
+            let host = loc.host().unwrap();
+
+            let href = format!("{proto}//{host}{instant_target}");
+            loc.set_href(&href).unwrap();
+        });
+
+        target
     };
 
     view! {
@@ -80,7 +96,6 @@ pub fn App() -> impl IntoView {
         <Router>
             <Routes fallback=|| "Page not found.".into_view()>
                 <Route path=StaticSegment("") view=HomePage/>
-                <Route path=(StaticSegment("auth"), WildcardSegment("_unused")) view=Reload/>
                 <ProtectedParentRoute path=StaticSegment("i") view=ModSelectorWithOutlet condition=auth_check redirect_path=redirect_path>
                     <ExplorerRoutes/>
                     <Route path=StaticSegment("") view=RedirectToRoot/>
@@ -98,15 +113,6 @@ fn HomePage() -> impl IntoView {
         <GitHubCorner repo="fgardt/mod-explorer"/>
         <ModSelector/>
     }
-}
-
-#[component]
-fn Reload() -> impl IntoView {
-    Effect::new(|| {
-        location().reload().unwrap();
-    });
-
-    ().into_view()
 }
 
 #[component(transparent)]
