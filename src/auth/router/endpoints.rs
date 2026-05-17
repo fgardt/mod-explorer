@@ -46,8 +46,22 @@ pub async fn login(State(state): State<AuthState>, Query(query): Query<LoginQuer
 
 #[derive(Clone, serde::Deserialize)]
 pub struct CallbackQuery {
-    pub code: String,
     pub state: String,
+
+    #[serde(flatten)]
+    pub result: CallbackResult,
+}
+
+#[derive(Clone, serde::Deserialize)]
+#[serde(untagged)]
+pub enum CallbackResult {
+    Success {
+        code: String,
+    },
+    Error {
+        error: String,
+        error_description: Option<String>,
+    },
 }
 
 pub async fn callback(
@@ -55,7 +69,22 @@ pub async fn callback(
     Query(query): Query<CallbackQuery>,
     session: Session,
 ) -> Result<Redirect, (StatusCode, String)> {
-    let exchange = state.provider.complete_flow(query.code, query.state);
+    let code = match query.result {
+        CallbackResult::Success { code } => code,
+        CallbackResult::Error {
+            error,
+            error_description,
+        } => {
+            state.provider.abort_flow(query.state).await;
+
+            return Err((
+                StatusCode::FORBIDDEN,
+                format!("Authentication failed: {error}: {error_description:?}"),
+            ));
+        }
+    };
+
+    let exchange = state.provider.complete_flow(code, query.state);
     let (token, destination) = match exchange.await {
         Ok(res) => res,
         Err(e) => {

@@ -159,6 +159,11 @@ impl Provider {
         Ok((token, exchange.next))
     }
 
+    pub async fn abort_flow(&self, state: String) {
+        let mut pending = self.pending_flows.lock().await;
+        pending.remove(&state);
+    }
+
     pub async fn refresh_token(&self, token: &mut Token) -> Result<(), OauthError> {
         let Some(refresh_token) = &token.refresh_token else {
             return Err(OauthError::MissingRefreshToken);
