@@ -84,8 +84,10 @@ pub async fn fetch_file(
     }
 
     if let Some(guess) = mime_guess::from_path(&path).first() {
+        // println!("Guessed MIME type: {guess} for file: {}", path.display());
+
         match (guess.type_().as_str(), guess.subtype().as_str()) {
-            ("text", _) | ("application", "json") => {} // text / json files are fine
+            ("text", _) | ("application", _) => {} // text / json / script files are fine
             _ => {
                 return Err(ServerFnError::ServerError(
                     "Only text files can be viewed".into(),
