@@ -96,7 +96,7 @@ pub fn App() -> impl IntoView {
         <Router>
             <Routes fallback=ModSelectorWithOutlet>
                 <Route path=StaticSegment("") view=HomePage/>
-                <ProtectedParentRoute path=StaticSegment("i") view=ModSelectorWithOutlet condition=auth_check redirect_path=redirect_path>
+                <ProtectedParentRoute path=StaticSegment("mod") view=ModSelectorWithOutlet condition=auth_check redirect_path=redirect_path>
                     <ExplorerRoutes/>
                     <Route path=StaticSegment("") view=RedirectToRoot/>
                 </ProtectedParentRoute>

@@ -53,7 +53,7 @@ pub fn ModSelector() -> impl IntoView {
         if name.is_empty() {
             None
         } else {
-            Some(format!("/i/{name}/{version}"))
+            Some(format!("/mod/{name}/{version}"))
         }
     };
 

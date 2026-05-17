@@ -85,7 +85,7 @@ async fn main() -> ExitCode {
         None => app.into_make_service(),
         Some(mut config) => {
             // TODO: keeping this in sync by hand is annoying & error-prone, should be generated from route list
-            let protected = vec!["/i/".into(), "/api/sec/".into()].into_boxed_slice();
+            let protected = vec!["/mod/".into(), "/api/sec/".into()].into_boxed_slice();
             config.route.protected_prefixes = protected;
 
             app.use_factorio_auth(config).into_make_service()
