@@ -1,11 +1,14 @@
 use leptos::prelude::*;
 use leptos_meta::{MetaTags, Stylesheet, Title, provide_meta_context};
+use leptos_router::components::{
+    Outlet, ParentRoute, ProtectedParentRoute, Redirect, Route, Router, Routes,
+};
+use leptos_router::hooks::use_location;
 use leptos_router::{
     MatchNestedRoutes, NavigateOptions, ParamSegment, StaticSegment, WildcardSegment,
     any_nested_route::IntoAnyNestedRoute,
-    components::{Outlet, ParentRoute, ProtectedParentRoute, Redirect, Route, Router, Routes},
-    hooks::use_location,
 };
+use reactive_stores::Store;
 
 use crate::{auth, components};
 
@@ -32,25 +35,31 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
+#[derive(Clone, Default, Store)]
+struct GlobalState {
+    session: Option<auth::session::SessionPublic>,
+}
+
 #[component]
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
+    provide_context(Store::new(GlobalState::default()));
 
-    let session = Resource::new(|| {}, async |_| auth::session::get_session_data().await);
+    let session = Resource::new(
+        || {},
+        async |_| {
+            let session = auth::session::get_session_data().await.ok().flatten();
 
-    let auth_check = move || {
-        session
-            .get()
-            .and_then(|s| s.ok())
-            .map(|session| match session {
-                Some(session) => {
-                    provide_context(session);
-                    true
-                }
-                None => false,
-            })
-    };
+            let global =
+                use_context::<Store<GlobalState>>().expect("GlobalState context not found");
+            global.session().set(session.clone());
+
+            session
+        },
+    );
+
+    let auth_check = move || session.get().as_ref().map(Option::is_some);
     let redirect_path = || {
         let current = use_location();
         let path = current.pathname.read_untracked();
@@ -107,12 +116,21 @@ pub fn App() -> impl IntoView {
 
 #[component]
 fn HomePage() -> impl IntoView {
+    let global = use_context::<Store<GlobalState>>().expect("GlobalState context not found");
+    let session = global.session();
+
     view! {
         <Title text="Factorio mod explorer"/>
         <GitHubCorner repo="fgardt/mod-explorer"/>
         <ModSelectorWithOutlet/>
         <div class="welcome">
-            <h1>"Welcome to the Factorio mod explorer!"</h1>
+            <h1>
+                "Welcome to the Factorio mod explorer"
+                {move || {
+                    session.clone().read().as_ref().map(|s| format!(", {}", s.username))
+                }}
+                "!"
+            </h1>
             <Bookmarklet/>
         </div>
         <h3 class="how">"^^ To get started just search for any mod here"</h3>
