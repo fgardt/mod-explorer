@@ -210,8 +210,6 @@ async fn get_file_tree(
         .join(format!("{name}_{version}"))
         .join(path);
 
-    println!("Reading directory: {}", path.display());
-
     let mut node_count = 0;
     match read_dir_to_nodes(path, &mut node_count).await {
         Err(e) => Err(ServerFnError::ServerError(format!(

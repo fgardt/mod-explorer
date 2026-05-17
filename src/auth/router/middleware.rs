@@ -62,8 +62,7 @@ pub async fn authentication_check(
 
                 session.insert(cookie_name, new_data).await.ok();
             }
-            Err(e) => {
-                eprintln!("Failed to refresh token: {e}");
+            Err(_) => {
                 session.remove::<SessionData>(SESSION_KEY).await.ok();
                 return redirect_to_login(&state.route_config.prefix, uri);
             }
