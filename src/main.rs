@@ -174,23 +174,64 @@ fn mod_folder_scanner(scan_interval: u64, state: AppState) {
                     let mut v = v.into_iter().collect::<Vec<_>>();
 
                     v.sort_by(|a, b| {
-                        fn parts(s: &str) -> [&str; 3] {
+                        #[derive(PartialEq, Eq)]
+                        struct VersionPart {
+                            val: u64,
+                            len: u8,
+                        }
+
+                        impl std::cmp::PartialOrd for VersionPart {
+                            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+                                Some(self.cmp(other))
+                            }
+                        }
+
+                        impl std::cmp::Ord for VersionPart {
+                            fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+                                self.val
+                                    .cmp(&other.val)
+                                    .then_with(|| self.len.cmp(&other.len))
+                            }
+                        }
+
+                        fn parts(s: &str) -> [VersionPart; 3] {
                             let mut parts = s.split('.');
 
                             let major = parts.next().unwrap_or_default();
                             let minor = parts.next().unwrap_or_default();
                             let patch = parts.next().unwrap_or_default();
 
-                            [major, minor, patch]
+                            let maj_len = major.len() as u8;
+                            let min_len = minor.len() as u8;
+                            let pat_len = patch.len() as u8;
+
+                            let major = major.parse().unwrap_or(0);
+                            let minor = minor.parse().unwrap_or(0);
+                            let patch = patch.parse().unwrap_or(0);
+
+                            [
+                                VersionPart {
+                                    val: major,
+                                    len: maj_len,
+                                },
+                                VersionPart {
+                                    val: minor,
+                                    len: min_len,
+                                },
+                                VersionPart {
+                                    val: patch,
+                                    len: pat_len,
+                                },
+                            ]
                         }
 
                         let a_parts = parts(a);
                         let b_parts = parts(b);
 
                         a_parts[0]
-                            .cmp(b_parts[0])
-                            .then_with(|| a_parts[1].cmp(b_parts[1]))
-                            .then_with(|| a_parts[2].cmp(b_parts[2]))
+                            .cmp(&b_parts[0])
+                            .then_with(|| a_parts[1].cmp(&b_parts[1]))
+                            .then_with(|| a_parts[2].cmp(&b_parts[2]))
                     });
                     v.reverse();
 
