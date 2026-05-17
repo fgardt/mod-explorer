@@ -9,7 +9,7 @@ use leptos_router::{
 
 use crate::{auth, components};
 
-use components::GitHubCorner;
+use components::{Bookmarklet, GitHubCorner};
 use components::{EmptyFileViewer, FileTree, FileViewer};
 use components::{ModSelector, ModSelectorData};
 
@@ -94,7 +94,7 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/mod-explorer.css"/>
         <ModSelectorData/>
         <Router>
-            <Routes fallback=ModSelectorWithOutlet>
+            <Routes fallback=||().into_view()>
                 <Route path=StaticSegment("") view=HomePage/>
                 <ProtectedParentRoute path=StaticSegment("mod") view=ModSelectorWithOutlet condition=auth_check redirect_path=redirect_path>
                     <ExplorerRoutes/>
@@ -111,7 +111,10 @@ fn HomePage() -> impl IntoView {
         <Title text="Factorio mod explorer"/>
         <GitHubCorner repo="fgardt/mod-explorer"/>
         <ModSelectorWithOutlet/>
-        <h1 class="welcome">"Welcome to the Factorio mod explorer!"</h1>
+        <div class="welcome">
+            <h1>"Welcome to the Factorio mod explorer!"</h1>
+            <Bookmarklet/>
+        </div>
         <h3 class="how">"^^ To get started just search for any mod here"</h3>
     }
 }
