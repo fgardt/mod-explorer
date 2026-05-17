@@ -36,7 +36,8 @@ pub trait AuthRoutes {
 
 impl AuthRoutes for axum::Router {
     fn use_factorio_auth(self, config: AuthConfig) -> axum::Router {
-        use tower_sessions::{ExpiredDeletion, cookie::SameSite};
+        use tower_sessions::cookie::{SameSite, time::Duration as CookieTimer};
+        use tower_sessions::{ExpiredDeletion, Expiry};
         use tower_sessions_file_store::FileSessionStorage;
 
         let state = AuthState::new(&config);
@@ -67,10 +68,14 @@ impl AuthRoutes for axum::Router {
                 .clone()
                 .continuously_delete_expired(Duration::from_secs(60)),
         );
+
+        let age = config.session.timeout_seconds + (config.session.timeout_seconds >> 2);
+        let cookie_timer = CookieTimer::seconds(age as i64);
         let session_manager = tower_sessions::SessionManagerLayer::new(session_store)
             .with_name(config.session.cookie_name)
             .with_secure(!config.session.cookie_insecure)
-            .with_same_site(SameSite::Lax);
+            .with_same_site(SameSite::Lax)
+            .with_expiry(Expiry::OnInactivity(cookie_timer));
 
         Self::new()
             .merge(auth_router)
