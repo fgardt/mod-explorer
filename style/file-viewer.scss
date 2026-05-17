@@ -5,8 +5,8 @@
     grid-template-columns: 1fr;
     grid-template-rows: 3rem 1fr;
     grid-template-areas:
-        "filename"
-        "content";
+        "filename theme"
+        "content content";
 
     overflow: hidden;
 
@@ -24,15 +24,24 @@
     }
 }
 
+.filename,
+.theme-selector {
+    margin: 0;
+    padding: 0.75em;
+
+    align-self: center;
+    width: fit-content;
+}
+
 .filename {
     grid-area: filename;
 
     font-weight: 600;
-    margin: 0;
-    padding: 0.75em;
-
-    width: fit-content;
     user-select: none;
+}
+
+.theme-selector {
+    grid-area: theme;
 }
 
 .content {
