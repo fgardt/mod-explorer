@@ -254,8 +254,7 @@ async fn read_dir_to_nodes<P: AsRef<std::path::Path>>(
         if *node_count >= NODE_LAZY_THRESHOLD {
             nodes.push(FileTreeNode::LazyDir(name));
         } else {
-            let mut children = Box::pin(read_dir_to_nodes(path, node_count)).await?;
-            children.sort_by_key(|c| c.name().to_string());
+            let children = Box::pin(read_dir_to_nodes(path, node_count)).await?;
 
             if children.is_empty() {
                 nodes.push(FileTreeNode::EmptyDir(name));
