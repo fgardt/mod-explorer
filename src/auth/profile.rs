@@ -1,6 +1,5 @@
 use oauth2::{AccessToken, reqwest};
 use serde::{Deserialize, Serialize};
-use url::Url;
 
 use super::session::{ModInfo, SessionPublic};
 
@@ -82,7 +81,7 @@ impl FetchProfile for MainProfile {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ModPortalProfile {
-    pub avatar_url: Url,
+    pub avatar_url: String,
     pub id: String,
     pub mods: Box<[ModInfo]>,
     pub mods_collaborated: Box<[ModInfo]>,
