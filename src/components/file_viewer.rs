@@ -28,7 +28,7 @@ pub fn FileViewer() -> impl IntoView {
         <div class="fileviewer">
             <Transition set_pending=set_pending fallback=move || view! {
                 <p class="filename">{move || file_path()}</p>
-                <textarea class="loading" readonly=true></textarea>
+                <div class="content pending"></div>
             }>
                 <p class="filename">{move || file_path()}</p>
                 <div class="content" class:pending=pending>

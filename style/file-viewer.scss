@@ -1,37 +1,61 @@
 .fileviewer {
-    flex: 1;
+    grid-area: view;
 
-    &>.filename {
-        font-weight: 600;
-        padding: 0.75em;
-        margin: 0.25em 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 3rem 1fr;
+    grid-template-areas:
+        "filename"
+        "content";
 
-        width: fit-content;
-        user-select: none;
-    }
+    overflow: hidden;
 
-    &>.content {
-        max-height: 95vh;
-        max-width: 100%;
+    &.empty {
+        p {
+            grid-area: content;
 
-        padding: 0.75em;
-        margin-left: 0.5em;
-        border: none;
+            font-size: 1.25rem;
+            font-style: italic;
+            color: #aaa;
 
-        overflow: auto;
-
-        background: transparent;
-        color: white;
-
-        white-space: preserve nowrap;
-        line-break: strict;
-
-        font-family: monospace;
-
-        &::after {
-            height: 15rem;
-            display: block;
-            content: "";
+            margin: 0;
+            margin-left: 2.5em;
         }
+    }
+}
+
+.filename {
+    grid-area: filename;
+
+    font-weight: 600;
+    margin: 0;
+    padding: 0.75em;
+
+    width: fit-content;
+    user-select: none;
+}
+
+.content {
+    grid-area: content;
+
+    padding: 0.75em;
+    padding-right: 2.5em;
+    margin-left: 0.5em;
+    border: none;
+
+    overflow: auto;
+    min-height: max-content;
+
+    font-family: monospace;
+    background: transparent;
+    color: white;
+
+    white-space: preserve nowrap;
+    line-break: strict;
+
+    &::after {
+        height: 15rem;
+        display: block;
+        content: "";
     }
 }

@@ -1,11 +1,15 @@
 .filetree {
+    grid-area: tree;
     overflow: auto;
-    min-width: 20rem;
-    max-width: 20rem;
-
     padding: 1em 0.5em;
 
     user-select: none;
+
+    a,
+    .dir,
+    .dir_children {
+        min-width: max-content;
+    }
 
     a,
     .dir {

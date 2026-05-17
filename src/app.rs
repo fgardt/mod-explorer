@@ -94,7 +94,7 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/mod-explorer.css"/>
         <ModSelectorData/>
         <Router>
-            <Routes fallback=|| "Page not found.".into_view()>
+            <Routes fallback=ModSelectorWithOutlet>
                 <Route path=StaticSegment("") view=HomePage/>
                 <ProtectedParentRoute path=StaticSegment("i") view=ModSelectorWithOutlet condition=auth_check redirect_path=redirect_path>
                     <ExplorerRoutes/>
@@ -109,9 +109,10 @@ pub fn App() -> impl IntoView {
 fn HomePage() -> impl IntoView {
     view! {
         <Title text="Factorio mod explorer"/>
-        <h1>"Welcome to the Factorio mod explorer!"</h1>
         <GitHubCorner repo="fgardt/mod-explorer"/>
-        <ModSelector/>
+        <ModSelectorWithOutlet/>
+        <h1 class="welcome">"Welcome to the Factorio mod explorer!"</h1>
+        <h3 class="how">"^^ To get started just search for any mod here"</h3>
     }
 }
 
@@ -143,10 +144,8 @@ fn ModSelectorWithOutlet() -> impl IntoView {
 #[component]
 fn FileTreeWithOutlet() -> impl IntoView {
     view! {
-        <div class="explorer">
-            <FileTree/>
-            <Outlet/>
-        </div>
+        <FileTree/>
+        <Outlet/>
     }
 }
 
