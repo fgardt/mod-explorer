@@ -18,20 +18,27 @@ pub async fn authentication_check(
     mut request: Request,
     next: axum::middleware::Next,
 ) -> Response {
+    const SESSION_ENDPOINT: &str = "/auth/session";
+
     let protected_prefixes = &state.route_config.protected_prefixes;
     let uri = request.uri();
     let path = uri.path();
 
     // check if uri is unprotected
-    if !protected_prefixes
-        .iter()
-        .any(|prefix| path.starts_with(prefix))
+    if path != SESSION_ENDPOINT
+        && !protected_prefixes
+            .iter()
+            .any(|prefix| path.starts_with(prefix))
     {
         return next.run(request).await;
     }
 
     let cookie_name = &state.cookie_name;
     let Some(session_data) = session.get::<SessionData>(SESSION_KEY).await.ok().flatten() else {
+        if path == SESSION_ENDPOINT {
+            return next.run(request).await;
+        }
+
         // no session, but protected
 
         // don't redirect server_fns
@@ -46,14 +53,13 @@ pub async fn authentication_check(
         return redirect_to_login(&state.route_config.prefix, uri);
     };
 
+    let public = session_data.public_data.clone();
+    let mut redirect = false;
+
     if session_data.token.is_expired() {
         session.remove::<SessionData>(SESSION_KEY).await.ok();
-        return redirect_to_login(&state.route_config.prefix, uri);
-    }
-
-    let public = session_data.public_data.clone();
-
-    if session_data.token.should_refresh(Duration::from_mins(30)) {
+        redirect = true;
+    } else if session_data.token.should_refresh(Duration::from_mins(30)) {
         let mut token = session_data.token.clone();
         match state.provider.refresh_token(&mut token).await {
             Ok(()) => {
@@ -64,9 +70,17 @@ pub async fn authentication_check(
             }
             Err(_) => {
                 session.remove::<SessionData>(SESSION_KEY).await.ok();
-                return redirect_to_login(&state.route_config.prefix, uri);
+                redirect = true;
             }
         }
+    }
+
+    if redirect {
+        if path == SESSION_ENDPOINT {
+            return next.run(request).await;
+        }
+
+        return redirect_to_login(&state.route_config.prefix, uri);
     }
 
     request.extensions_mut().insert(public);
