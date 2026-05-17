@@ -14,7 +14,6 @@ pub struct AuthState {
     provider: Provider,
 
     route_config: RouteConfig,
-    cookie_name: String,
 }
 
 impl AuthState {
@@ -25,7 +24,6 @@ impl AuthState {
         Self {
             provider,
             route_config: config.route.clone(),
-            cookie_name: config.session.cookie_name.clone(),
         }
     }
 }

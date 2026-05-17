@@ -18,27 +18,26 @@ pub async fn authentication_check(
     mut request: Request,
     next: axum::middleware::Next,
 ) -> Response {
-    const SESSION_ENDPOINT: &str = "/auth/session";
+    let session_data = session.get::<SessionData>(SESSION_KEY).await.ok().flatten();
+    if let Some(session_data) = &session_data {
+        request
+            .extensions_mut()
+            .insert(session_data.public_data.clone());
+    }
 
     let protected_prefixes = &state.route_config.protected_prefixes;
     let uri = request.uri();
     let path = uri.path();
 
     // check if uri is unprotected
-    if path != SESSION_ENDPOINT
-        && !protected_prefixes
-            .iter()
-            .any(|prefix| path.starts_with(prefix))
+    if !protected_prefixes
+        .iter()
+        .any(|prefix| path.starts_with(prefix))
     {
         return next.run(request).await;
     }
 
-    let cookie_name = &state.cookie_name;
-    let Some(session_data) = session.get::<SessionData>(SESSION_KEY).await.ok().flatten() else {
-        if path == SESSION_ENDPOINT {
-            return next.run(request).await;
-        }
-
+    let Some(session_data) = session_data else {
         // no session, but protected
 
         // don't redirect server_fns
@@ -53,37 +52,27 @@ pub async fn authentication_check(
         return redirect_to_login(&state.route_config.prefix, uri);
     };
 
-    let public = session_data.public_data.clone();
-    let mut redirect = false;
-
     if session_data.token.is_expired() {
         session.remove::<SessionData>(SESSION_KEY).await.ok();
-        redirect = true;
-    } else if session_data.token.should_refresh(Duration::from_mins(30)) {
+        return redirect_to_login(&state.route_config.prefix, uri);
+    }
+
+    if session_data.token.should_refresh(Duration::from_mins(30)) {
         let mut token = session_data.token.clone();
         match state.provider.refresh_token(&mut token).await {
             Ok(()) => {
                 let mut new_data = session_data;
                 new_data.token = token;
 
-                session.insert(cookie_name, new_data).await.ok();
+                session.insert(SESSION_KEY, new_data).await.ok();
             }
             Err(_) => {
                 session.remove::<SessionData>(SESSION_KEY).await.ok();
-                redirect = true;
+                return redirect_to_login(&state.route_config.prefix, uri);
             }
         }
     }
 
-    if redirect {
-        if path == SESSION_ENDPOINT {
-            return next.run(request).await;
-        }
-
-        return redirect_to_login(&state.route_config.prefix, uri);
-    }
-
-    request.extensions_mut().insert(public);
     next.run(request).await
 }
 
