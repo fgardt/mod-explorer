@@ -2,7 +2,7 @@ use leptos::prelude::*;
 
 const CODE: &str = r#"
 if (window.location.host == "mods.factorio.com") {
-    window.location.href = "[TARGET]" + window.location.pathname.match(/\/[^/?#]+\/[^/?#]+/)[0]
+    window.location.href = "[TARGET]" + window.location.pathname.match(/\/(?:mod|user)\/[^/?#]+/)[0]
 }
 "#
 .trim_ascii();
