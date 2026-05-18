@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use leptos_meta::{MetaTags, Stylesheet, Title, provide_meta_context};
+use leptos_meta::{HashedStylesheet, MetaTags, Title, provide_meta_context};
 use leptos_router::components::{
     Outlet, ParentRoute, ProtectedParentRoute, Redirect, Route, Router, Routes,
 };
@@ -24,6 +24,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1"/>
                 <meta name="format-detection" content="telephone=no"/>
+                <HashedStylesheet id="main" options=options.clone() />
                 <AutoReload options=options.clone() />
                 <HydrationScripts options/>
                 <MetaTags/>
@@ -100,7 +101,6 @@ pub fn App() -> impl IntoView {
     };
 
     view! {
-        <Stylesheet id="leptos" href="/pkg/mod-explorer.css"/>
         <ModSelectorData/>
         <Router>
             <Routes fallback=||().into_view()>
