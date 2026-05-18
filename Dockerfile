@@ -27,4 +27,4 @@ ENV RUST_LOG="info"
 ENV LEPTOS_SITE_ROOT=./site
 EXPOSE 3000
 
-CMD ["/app/mod-explorer"]
+ENTRYPOINT ["mod-explorer"]
