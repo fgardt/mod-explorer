@@ -33,6 +33,13 @@ pub fn Attribution() -> impl IntoView {
                             <a href=res.license_url.clone() target="_blank">
                                 {res.license_name}
                             </a>
+                            {res.source_url.as_ref().map(|src| view! {
+                                <p>
+                                    "("
+                                    <a href=src.clone() target="_blank">"source"</a>
+                                    ")"
+                                </p>
+                            })}
                         </div>
                     }
                 })
@@ -60,6 +67,7 @@ struct AttributionData {
     owner: String,
     license_name: String,
     license_url: String,
+    source_url: Option<String>,
 }
 
 #[server]
@@ -79,5 +87,6 @@ async fn get_attribution(name: String) -> Result<AttributionData, ServerFnError>
         owner: info.owner.to_string(),
         license_name: info.license.title.to_string(),
         license_url: info.license.url.to_string(),
+        source_url: info.source_url,
     })
 }

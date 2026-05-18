@@ -22,5 +22,10 @@
 
     p {
         color: #ccc;
+
+        &:last-child {
+            // only affects the source link when present
+            margin-left: .75rem;
+        }
     }
 }

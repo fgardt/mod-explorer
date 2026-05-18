@@ -13,6 +13,7 @@ pub struct AttributionDataInternal {
     pub title: String,
     pub owner: DedupString,
     pub license: LicenseInfo,
+    pub source_url: Option<String>,
 }
 
 #[derive(Clone)]
@@ -88,6 +89,7 @@ impl AttributionCache {
             title: data.title,
             owner,
             license,
+            source_url: data.source_url,
         };
 
         self.cache
