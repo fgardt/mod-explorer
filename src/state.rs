@@ -7,11 +7,15 @@ use std::{
 use syntect::{highlighting::ThemeSet, parsing::SyntaxSet};
 use tokio::sync::RwLock;
 
+mod attribution_cache;
+use attribution_cache::AttributionCache;
+
 type DedupString = Arc<str>;
 
 pub struct ModsState {
     pub all_mods: RwLock<BTreeSet<DedupString>>,
     pub mod_versions: RwLock<HashMap<DedupString, Box<[DedupString]>>>,
+    pub attribution_cache: AttributionCache,
 }
 
 impl ModsState {
@@ -58,6 +62,7 @@ impl AppState {
             mods_state: Arc::new(ModsState {
                 all_mods: RwLock::new(BTreeSet::new()),
                 mod_versions: RwLock::new(HashMap::new()),
+                attribution_cache: AttributionCache::default(),
             }),
             highlighter: Arc::new(Highlighter {
                 syntax_set: SyntaxSet::load_defaults_newlines(),

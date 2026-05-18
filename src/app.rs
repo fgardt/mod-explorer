@@ -12,8 +12,8 @@ use reactive_stores::Store;
 
 use crate::{auth, components};
 
+use components::{Attribution, EmptyFileViewer, FileTree, FileViewer};
 use components::{Bookmarklet, GitHubCorner};
-use components::{EmptyFileViewer, FileTree, FileViewer};
 use components::{ModSelector, ModSelectorData};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -166,6 +166,7 @@ fn ModSelectorWithOutlet() -> impl IntoView {
 fn FileTreeWithOutlet() -> impl IntoView {
     view! {
         <FileTree/>
+        <Attribution/>
         <Outlet/>
     }
 }

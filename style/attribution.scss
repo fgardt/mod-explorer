@@ -1,0 +1,26 @@
+.attribution {
+    grid-area: ft;
+
+    display: flex;
+    align-items: center;
+    padding-left: 0.75rem;
+
+    a,
+    p {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.15rem;
+    }
+
+    a {
+        color: #549bc1;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    p {
+        color: #ccc;
+    }
+}

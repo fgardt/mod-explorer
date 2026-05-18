@@ -27,6 +27,7 @@ oauth2 = { version = "5", optional = true }
 tower-sessions = { version = "0.14.0", optional = true }
 tower-sessions-file-store = { version = "0.2.0", optional = true }
 syntect = { version = "5.3.0", optional = true }
+factorio_api = { git = "https://github.com/fgardt/factorio-scanner.git", optional = true }
 
 [features]
 hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
@@ -43,6 +44,7 @@ ssr = [
     "dep:tower-sessions",
     "dep:tower-sessions-file-store",
     "dep:syntect",
+    "dep:factorio_api",
     "leptos/ssr",
     "leptos_meta/ssr",
     "leptos_router/ssr",

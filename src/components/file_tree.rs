@@ -42,11 +42,17 @@ pub fn FileTree() -> impl IntoView {
                 set_pending
             >
                 {move || {
-                    match tree.get() {
-                        None => "No data".into_view().into_any(),
-                        Some(Err(_)) => "Failed to load".into_view().into_any(),
-                        Some(Ok(tree)) => tree.view(name_untracked(), version_untracked(), "".into()).into_any(),
-                    }
+                    tree.get().map(|res| match res {
+                        Ok(tree) => tree.view(name_untracked(), version_untracked(), "".into()).into_any(),
+                        Err(e) => view! {
+                            <div class="error">
+                                { match e {
+                                    ServerFnError::ServerError(msg) => msg.into_view().into_any(),
+                                    _ => "Failed to load".into_view().into_any(),
+                                }}
+                            </div>
+                        }.into_any()
+                    })
                 }}
             </Transition>
         </div>
@@ -193,6 +199,12 @@ async fn get_file_tree(
             "Mod or version not found".into(),
         ));
     };
+
+    if !state.mods_state.attribution_cache.can_access(&name).await {
+        return Err(ServerFnError::ServerError(
+            "Mod license does not allow exploring it via this tool".into(),
+        ));
+    }
 
     let requested_path = path.clone();
     let path = PathBuf::from(path);

@@ -119,6 +119,12 @@ pub async fn fetch_file(
         ));
     };
 
+    if !state.mods_state.attribution_cache.can_access(&name).await {
+        return Err(ServerFnError::ServerError(
+            "Mod license does not allow exploring via this tool".into(),
+        ));
+    }
+
     let path = PathBuf::from(path);
     if path.components().any(|c| {
         matches!(
