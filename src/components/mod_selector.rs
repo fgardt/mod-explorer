@@ -66,11 +66,11 @@ pub fn ModSelector() -> impl IntoView {
                 navigate(&target, Default::default());
             }
         }>
-            <input type="text" list="mods" node_ref=name_ref placeholder="Search for mod" value=move ||{name()}/>
+            <input type="text" list="mods" name="mod" node_ref=name_ref placeholder="Search for mod" value=name()/>
             {move || {
                 if let Some(version) = version() {
                     view! {
-                        <select prop:value=version on:change:target=move |ev| {
+                        <select name="version" on:change:target=move |ev| {
                                 let version = ev.target().value();
 
                                 let Some(mut target) = nav_target(version.as_str()) else {
@@ -91,18 +91,15 @@ pub fn ModSelector() -> impl IntoView {
                                 <option value="latest">"latest (?.?.?)"</option>
                             }>
                                 {move || {
-
                                     match available_versions.get().flatten() {
                                         Some((latest, all_versions)) => {
+                                            let is_selected = |v: String| version == v;
 
-                                            std::iter::once(view! {
-                                                <option value="latest">"latest ("{latest.clone()}")"</option>
-                                            }.into_any())
-                                            .chain(all_versions.iter().map(|v| {
-                                                view! {
-                                                    <option value={v.clone()}>{v.clone()}</option>
-                                                }.into_any()
-                                            })).collect_view().into_any()
+                                            std::iter::once(("latest".into(), format!("latest ({latest})")))
+                                                .chain(all_versions.into_iter().map(|v| (v.clone(), v)))
+                                                .map(|(value, label)| view! {
+                                                    <option value={value.clone()} selected=is_selected(value)>{label}</option>
+                                            }).collect_view().into_any()
                                         }
                                         None => {
                                             view! {

@@ -71,13 +71,15 @@ fn ThemeSelector() -> impl IntoView {
                     <option value=DEFAULT_THEME>{DEFAULT_THEME}</option>
                 }>
                     {move || {
+                        let is_selected = |theme: String| theme == selected_theme.get();
+
                         themes.get().map(|res| match res {
                             Err(_) => view! {
                                 <option value=DEFAULT_THEME>{DEFAULT_THEME}</option>
                             }.into_any(),
                             Ok(t) => t.iter().map(|t| {
                                 view! {
-                                    <option value={t.clone()}>{t.clone()}</option>
+                                    <option value={t.clone()} selected=is_selected(t.clone())>{t.clone()}</option>
                                 }
                             }).collect_view().into_any(),
                         })
