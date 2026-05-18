@@ -8,7 +8,7 @@
         "filename theme"
         "content content";
 
-    overflow: hidden;
+    overflow: auto;
 
     &.empty {
         p {
@@ -53,7 +53,6 @@
     border: none;
 
     overflow: auto;
-    min-height: max-content;
 
     font-family: monospace;
     background: transparent;
@@ -61,6 +60,11 @@
 
     white-space: preserve nowrap;
     line-break: strict;
+
+    &>div {
+        min-width: fit-content;
+        margin-right: 2.5rem;
+    }
 
     &::after {
         height: 15rem;

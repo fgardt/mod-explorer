@@ -35,7 +35,9 @@ pub fn FileViewer() -> impl IntoView {
                 {move || {
                     file_content.get().map(|res| match res {
                         Ok(content) => view! {
-                            <div class="content" class:pending=pending inner_html=content />
+                            <div class="content" class:pending=pending>
+                                <div inner_html=content />
+                            </div>
                         }.into_any(),
                         Err(e) => view! {
                             <div class="content" class:pending=pending>
