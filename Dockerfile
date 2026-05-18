@@ -40,7 +40,7 @@ RUN cargo leptos build --release -vv
 FROM debian:stable-slim AS runner
 WORKDIR /app
 
-COPY --from=builder /work/target/release/mod-explorer /app/
+COPY --from=builder /work/target/release/mod-explorer /usr/bin/
 COPY --from=builder /work/target/release/hash.txt /app/
 COPY --from=builder /work/target/site /app/site
 COPY --from=builder /work/Cargo.toml /app/
