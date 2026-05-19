@@ -13,47 +13,60 @@
         font-weight: bold;
     }
 
-    a,
-    .dir,
-    .dir_children {
-        min-width: max-content;
+    :first-child {
+        >summary {
+            display: none;
+        }
+
+        &,
+        >* {
+            margin-left: 0 !important;
+        }
     }
 
     a,
-    .dir {
+    span {
+        display: block;
+        min-width: max-content;
         padding: 0.125em 0.25em;
+
+        color: inherit;
+        text-decoration: none;
 
         cursor: pointer;
 
         &:hover {
             background: #333;
         }
+
+        &::before {
+            content: "📄";
+        }
+
+        &[aria-current="page"] {
+            font-weight: 900;
+        }
     }
 
-    a {
-        text-decoration: none;
-        color: inherit;
-        display: block;
+    ::marker {
+        content: "";
     }
 
-    a::before {
-        content: "📄";
+    summary>*::before {
+        content: "📁";
     }
 
-    a[aria-current="page"] {
-        font-weight: 900;
+    details:open>summary>*::before {
+        content: "📂";
     }
 
-    .dir::before {
-        content: "📁" !important;
-    }
-
-    .dir_children {
-        display: none;
+    details,
+    details>* {
         margin-left: 1em;
     }
 
-    .dir_children.open {
-        display: block;
+    details>.empty {
+        margin-left: 2em;
+        font-style: italic;
     }
 }

@@ -13,6 +13,15 @@ use theme::ThemeSelector;
 pub fn EmptyFileViewer() -> impl IntoView {
     view! {
         <div class="fileviewer empty">
+            <EmptyFileViewerInner />
+        </div>
+    }
+}
+
+#[component]
+fn EmptyFileViewerInner() -> impl IntoView {
+    view! {
+        <div class="empty">
             <p>"Select a file to view its contents"</p>
         </div>
     }
@@ -42,11 +51,14 @@ pub fn FileViewer() -> impl IntoView {
                 <p class="filename">{move || file_path()}</p>
                 {move || {
                     file_content.get().map(|res| match res {
-                        Ok((content, line_count)) => view! {
+                        Ok(Some((content, line_count))) => view! {
                             <div class="content" class:pending=pending>
                                 <LineNumbers count=line_count />
                                 <div class="file" inner_html=content />
                             </div>
+                        }.into_any(),
+                        Ok(None) => view! {
+                            <EmptyFileViewerInner />
                         }.into_any(),
                         Err(e) => view! {
                             <div class="content" class:pending=pending>
@@ -65,7 +77,7 @@ pub async fn fetch_file(
     name: String,
     version: String,
     path: String,
-) -> Result<(String, usize), ServerFnError> {
+) -> Result<Option<(String, usize)>, ServerFnError> {
     use std::path::{Component, PathBuf};
     use syntect::html::{ClassStyle, ClassedHTMLGenerator};
     use syntect::util::LinesWithEndings;
@@ -100,8 +112,12 @@ pub async fn fetch_file(
         .mods_folder
         .join(format!("{name}_{version}"))
         .join(path);
-    if !path.exists() || !path.is_file() {
+    if !path.exists() {
         return Err(ServerFnError::ServerError("File not found".into()));
+    }
+
+    if !path.is_file() {
+        return Ok(None);
     }
 
     if let Some(guess) = mime_guess::from_path(&path).first() {
@@ -151,5 +167,5 @@ pub async fn fetch_file(
         }
     }
 
-    Ok((g.finalize(), line_count))
+    Ok(Some((g.finalize(), line_count)))
 }

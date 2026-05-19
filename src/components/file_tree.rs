@@ -1,6 +1,9 @@
-use leptos::prelude::*;
+use leptos::{ev::MouseEvent, prelude::*};
 use leptos_meta::Title;
-use leptos_router::{components::A, hooks::use_params_map};
+use leptos_router::{
+    components::A,
+    hooks::{use_location, use_params_map},
+};
 use serde::{Deserialize, Serialize};
 
 #[component]
@@ -63,103 +66,126 @@ pub fn FileTree() -> impl IntoView {
 #[serde(rename_all = "snake_case")]
 enum FileTreeNode {
     File(String),
-    Dir(String, Vec<Self>),
-    EmptyDir(String),
-    LazyDir(String),
+    Dir(String, DirData),
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "snake_case")]
+enum DirData {
+    Loaded(Vec<FileTreeNode>),
+    Empty,
+    /// Indicates that the node limit during filetree generation was reached
+    /// so this directory's children need to be loaded lazily when the user tries to open it
+    Lazy,
+}
+
+impl DirData {
+    fn should_be_link(&self) -> bool {
+        matches!(self, Self::Lazy)
+    }
+}
+
+fn join_path(base: &str, segment: &str) -> String {
+    if base.is_empty() {
+        return segment.to_string();
+    }
+
+    [base, segment].join("/")
 }
 
 impl FileTreeNode {
     fn view(&self, name: String, version: String, path: String) -> impl IntoView {
-        fn join_path(base: &str, segment: &str) -> String {
-            [base, segment]
-                .join("/")
-                .trim_start_matches('/')
-                .to_string()
-        }
-
         match self {
             Self::File(filename) => {
                 let path = join_path(&path, filename);
                 let filename = filename.clone();
 
                 view! {
-                    <A href={path}>{filename}</A>
+                    <A href=path>{filename}</A>
                 }
                 .into_any()
             }
-            Self::EmptyDir(dirname) => {
-                let dirname = dirname.clone();
-
-                view! {
-                    <div class="dir empty">{dirname}</div>
-                }
-                .into_any()
-            }
-            Self::Dir(dirname, nodes) => {
-                let path = join_path(&path, dirname);
-                let dirname = dirname.clone();
-                let nodes = nodes.clone();
-
-                let (open, set_open) = RwSignal::new(dirname.is_empty()).split();
-                let (loaded, set_loaded) = RwSignal::new(false).split();
-
-                view! {
-                    <a class="dir" on:click=move |_| set_open.update(|s| *s = !*s)>{dirname}</a>
-                    <div class="dir_children" class:open=open>
-                        {move || if open.get() && !loaded.get() {
-                            set_loaded.set(true);
-                        }}
-                        {move || if loaded.get() {
-
-                            nodes.iter()
-                                    .map(|node| node.view(name.clone(), version.clone(), path.clone()))
-                                    .collect_view()
-                                    .into_any()
-                        } else {
-                            ().into_view().into_any()
-                        }}
-                    </div>
-                }
-                .into_any()
-            }
-            Self::LazyDir(dirname) => {
+            Self::Dir(dirname, data) => {
                 let path = join_path(&path, dirname);
                 let dirname = dirname.clone();
 
-                let (open, set_open) = RwSignal::new(false).split();
+                let current_path = use_location().pathname.read_untracked();
+                let node_path = format!("/mod/{name}/{version}/{path}",);
+                let node_path = node_path.strip_suffix('/').unwrap_or(&node_path);
+                let is_open = current_path.starts_with(node_path);
+
+                let (open, set_open) = RwSignal::new(is_open).split();
                 let (loaded, set_loaded) = RwSignal::new(false).split();
+
+                Effect::new_isomorphic(move |_| {
+                    if open.get() && !loaded.get() {
+                        set_loaded.set(true);
+                    }
+                });
 
                 let name = name.clone();
                 let version = version.clone();
+                let data = data.clone();
+                let link = data.should_be_link() && !is_open;
+
+                let click = move |ev: MouseEvent| {
+                    ev.prevent_default();
+                    set_open.update(|s| *s = !*s);
+                };
 
                 view! {
-                    <a class="dir" on:click=move |_| set_open.update(|s| *s = !*s)>{dirname.clone()}</a>
-                    <div class="dir_children" class:open=open>
-                        {move || if open.get() && !loaded.get() {
-                            set_loaded.set(true);
+                    <details open=open>
+                        <summary>
+                            {if link {
+                                view! {
+                                    <A href={path.clone()} on:click=click>{dirname}</A>
+                                }.into_any()
+                            } else {
+                                view! {
+                                    <FakeA href={path.clone()} on:click=click>{dirname}</FakeA>
+                                }.into_any()
+                            }}
+                        </summary>
+                        {move || match &data {
+                            DirData::Loaded(nodes) => nodes.iter().map(|node| node.view(name.clone(), version.clone(), path.clone())).collect_view().into_any(),
+                            DirData::Lazy => if loaded.get() {
+                                view! {
+                                    <LazyDirInner name=name.clone() version=version.clone() path=path.clone()/>
+                                }.into_any()
+                            } else {
+                                ().into_view().into_any()
+                            },
+                            DirData::Empty => view!{ <EmptyDirInner /> }.into_any(),
                         }}
-                        {move || if loaded.get() {
-                            let name = name.clone();
-                            let version = version.clone();
-                            let path = path.clone();
-
-                            view! {
-                                <LazyDirInner name=name version=version path=path/>
-                            }.into_any()
-                        } else {
-                            ().into_view().into_any()
-                        }}
-                    </div>
-                }.into_any()
+                    </details>
+                }
+                .into_any()
             }
         }
     }
+}
 
-    #[inline]
-    const fn name(&self) -> &str {
-        match self {
-            Self::File(n) | Self::Dir(n, _) | Self::EmptyDir(n) | Self::LazyDir(n) => n.as_str(),
-        }
+#[component]
+fn FakeA<Chil>(href: String, children: TypedChildren<Chil>) -> impl IntoView
+where
+    Chil: IntoView + Send + 'static,
+{
+    let path = use_location().pathname;
+    let path = move || {
+        let p = path.read();
+        let parts = p
+            .strip_prefix("/mod/")?
+            .split('/')
+            .skip(2)
+            .collect::<Box<[_]>>();
+        Some(parts.join("/"))
+    };
+
+    let is_active = move || path().unwrap_or_default().starts_with(&href);
+    let children = children.into_inner()();
+
+    view! {
+        <span aria-current=move || if is_active() { Some("page") } else { None }>{children}</span>
     }
 }
 
@@ -168,18 +194,31 @@ fn LazyDirInner(name: String, version: String, path: String) -> impl IntoView {
     let n = name.clone();
     let v = version.clone();
     let p = path.clone();
-    let tree = LocalResource::new(move || get_file_tree(n.clone(), v.clone(), p.clone()));
+    let tree = Resource::new(
+        || (),
+        move |_| get_file_tree(n.clone(), v.clone(), p.clone()),
+    );
 
     Suspend::new(async move {
         match tree.await {
-            Ok(FileTreeNode::Dir(_, nodes)) => nodes
+            Ok(FileTreeNode::Dir(_, DirData::Loaded(nodes))) => nodes
                 .iter()
                 .map(|node| node.view(name.clone(), version.clone(), path.clone()))
                 .collect_view()
                 .into_any(),
+            Ok(FileTreeNode::Dir(_, DirData::Empty)) => view! { <EmptyDirInner /> }.into_any(),
             _ => "Failed to load".into_view().into_any(),
         }
     })
+}
+
+#[component]
+fn EmptyDirInner() -> impl IntoView {
+    view! {
+        <div class="empty">
+            "empty"
+        </div>
+    }
 }
 
 #[server(prefix = "/api/sec")]
@@ -227,7 +266,8 @@ async fn get_file_tree(
         Err(e) => Err(ServerFnError::ServerError(format!(
             "Failed to read directory: {e}"
         ))),
-        Ok(nodes) => Ok(FileTreeNode::Dir(requested_path, nodes)),
+        Ok(nodes) if nodes.is_empty() => Ok(FileTreeNode::Dir(requested_path, DirData::Empty)),
+        Ok(nodes) => Ok(FileTreeNode::Dir(requested_path, DirData::Loaded(nodes))),
     }
 }
 
@@ -236,7 +276,7 @@ async fn read_dir_to_nodes<P: AsRef<std::path::Path>>(
     path: P,
     node_count: &mut usize,
 ) -> std::io::Result<Vec<FileTreeNode>> {
-    const NODE_LAZY_THRESHOLD: usize = 25;
+    const NODE_LAZY_THRESHOLD: usize = 50;
 
     let mut nodes = Vec::new();
     let mut entries = tokio::fs::read_dir(path).await?;
@@ -263,15 +303,15 @@ async fn read_dir_to_nodes<P: AsRef<std::path::Path>>(
     dirs.sort_by_key(|(n, _)| n.to_lowercase());
 
     for (name, path) in dirs {
-        if *node_count >= NODE_LAZY_THRESHOLD {
-            nodes.push(FileTreeNode::LazyDir(name));
+        if *node_count >= NODE_LAZY_THRESHOLD || name.starts_with('.') {
+            nodes.push(FileTreeNode::Dir(name, DirData::Lazy));
         } else {
             let children = Box::pin(read_dir_to_nodes(path, node_count)).await?;
 
             if children.is_empty() {
-                nodes.push(FileTreeNode::EmptyDir(name));
+                nodes.push(FileTreeNode::Dir(name, DirData::Empty));
             } else {
-                nodes.push(FileTreeNode::Dir(name, children));
+                nodes.push(FileTreeNode::Dir(name, DirData::Loaded(children)));
             }
         }
     }

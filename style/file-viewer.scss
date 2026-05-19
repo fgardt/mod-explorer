@@ -10,7 +10,7 @@
 
     overflow: auto;
 
-    &.empty {
+    .empty {
         p {
             grid-area: content;
 
