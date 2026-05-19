@@ -1,8 +1,12 @@
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 
+mod line_numbers;
 mod theme;
+
 pub use theme::DEFAULT_THEME;
+
+use line_numbers::LineNumbers;
 use theme::ThemeSelector;
 
 #[component]
@@ -38,9 +42,10 @@ pub fn FileViewer() -> impl IntoView {
                 <p class="filename">{move || file_path()}</p>
                 {move || {
                     file_content.get().map(|res| match res {
-                        Ok(content) => view! {
+                        Ok((content, line_count)) => view! {
                             <div class="content" class:pending=pending>
-                                <div inner_html=content />
+                                <LineNumbers count=line_count />
+                                <div class="file" inner_html=content />
                             </div>
                         }.into_any(),
                         Err(e) => view! {
@@ -60,7 +65,7 @@ pub async fn fetch_file(
     name: String,
     version: String,
     path: String,
-) -> Result<String, ServerFnError> {
+) -> Result<(String, usize), ServerFnError> {
     use std::path::{Component, PathBuf};
     use syntect::html::{ClassStyle, ClassedHTMLGenerator};
     use syntect::util::LinesWithEndings;
@@ -121,6 +126,8 @@ pub async fn fetch_file(
         }
     };
 
+    let line_count = content.lines().count();
+
     let extension = path
         .extension()
         .and_then(|ext| ext.to_str())
@@ -134,16 +141,15 @@ pub async fn fetch_file(
         })
         .unwrap_or_else(|| syntax_set.find_syntax_plain_text());
 
-    let mut generator =
-        ClassedHTMLGenerator::new_with_class_style(syntax, syntax_set, ClassStyle::Spaced);
+    let mut g = ClassedHTMLGenerator::new_with_class_style(syntax, syntax_set, ClassStyle::Spaced);
 
     for line in LinesWithEndings::from(&content) {
-        if let Err(e) = generator.parse_html_for_line_which_includes_newline(line) {
+        if let Err(e) = g.parse_html_for_line_which_includes_newline(line) {
             return Err(ServerFnError::ServerError(format!(
                 "Failed to parse file for syntax highlighting: {e}"
             )));
         }
     }
 
-    Ok(generator.finalize())
+    Ok((g.finalize(), line_count))
 }

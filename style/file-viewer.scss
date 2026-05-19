@@ -47,9 +47,11 @@
 .content {
     grid-area: content;
 
-    padding: 0.75em;
-    padding-right: 2.5em;
-    margin-left: 0.5em;
+    display: flex;
+    flex-direction: row;
+
+    margin: 0.5rem 0;
+    margin-left: 0.5rem;
     border: none;
 
     overflow: auto;
@@ -59,16 +61,35 @@
     color: white;
 
     white-space: preserve nowrap;
-    line-break: strict;
 
-    &>div {
-        min-width: fit-content;
-        margin-right: 2.5rem;
+    .line-numbers {
+        display: flex;
+        flex-direction: column;
+
+        div {
+            min-width: 3ch;
+            padding: 0 1ch;
+
+            text-align: end;
+            user-select: none;
+
+            color: #777;
+            text-decoration: none;
+
+            &:hover {
+                color: #ccc;
+            }
+        }
     }
 
-    &::after {
-        height: 15rem;
-        display: block;
-        content: "";
+    .file {
+        padding-left: 0.5rem;
+        margin-right: 5em;
+
+        &::after {
+            height: 5lh;
+            display: block;
+            content: "";
+        }
     }
 }
