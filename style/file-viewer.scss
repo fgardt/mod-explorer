@@ -46,6 +46,7 @@
 
 .content {
     grid-area: content;
+    position: relative;
 
     display: flex;
     flex-direction: row;
@@ -65,6 +66,7 @@
     .line-numbers {
         display: flex;
         flex-direction: column;
+        cursor: pointer;
 
         div {
             min-width: 3ch;
@@ -82,9 +84,20 @@
         }
     }
 
+    .line-highlight {
+        position: sticky;
+        left: 0;
+        z-index: -1;
+        min-width: 100%;
+        margin-right: -100%;
+
+        background-color: #FFBB0045;
+        border-left: 1px solid #FFBB00;
+    }
+
     .file {
         padding-left: 0.5rem;
-        margin-right: 5em;
+        padding-right: 5em;
 
         &::after {
             height: 5lh;
