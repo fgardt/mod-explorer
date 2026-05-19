@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use factorio_api::PortalLicenseId;
+use factorio_api::{PortalLicense, PortalLicenseId};
 use tokio::sync::{Mutex, RwLock};
 
 use super::DedupString;
@@ -82,7 +82,7 @@ impl AttributionCache {
         let license = LicenseInfo {
             title,
             url,
-            access_allowed: data.license.id != PortalLicenseId::Other, // TODO: inspect the license name / title to determine if it's actually allowed or not
+            access_allowed: license_allows_access(&data.license),
         };
 
         let attribution = AttributionDataInternal {
@@ -109,4 +109,60 @@ async fn dedup_helper(val: &str, mem: &RwLock<HashSet<DedupString>>) -> DedupStr
     let val: DedupString = val.into();
     mem.write().await.insert(val.clone());
     val
+}
+
+fn license_allows_access(license: &PortalLicense) -> bool {
+    if license.id != PortalLicenseId::Other {
+        return true;
+    }
+
+    let title = license
+        .title
+        .to_lowercase()
+        .replace([' ', '(', ')', '-', '_'], "");
+
+    let cc: Box<[&str]> = vec![
+        "ccby",
+        "bysa",
+        "bync",
+        "sharealike",
+        "attributionnoncommercial",
+        "attributionnoderivatives",
+    ]
+    .into_boxed_slice();
+
+    for check in cc {
+        if title.contains(check) {
+            return true;
+        }
+    }
+
+    let allowed_prefixes: Box<[&str]> = vec![
+        "gnu",
+        "gpl",
+        "lgpl",
+        "agpl3",
+        "agplv3",
+        "0bsd",
+        "mit",
+        "isc",
+        "bsd3",
+        "beerware",
+        "cc0",
+        "publicdomain",
+        "dwtfyw",
+        "wtfpl",
+        "wtf+gfy",
+        "zlib",
+        "mozillapublic",
+    ]
+    .into_boxed_slice();
+
+    for prefix in allowed_prefixes {
+        if title.starts_with(prefix) {
+            return true;
+        }
+    }
+
+    false
 }
