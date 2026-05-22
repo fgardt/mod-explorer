@@ -84,6 +84,10 @@
         }
     }
 
+    &.pending .line-highlight {
+        display: none;
+    }
+
     .line-highlight {
         position: sticky;
         left: 0;
