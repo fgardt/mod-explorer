@@ -117,7 +117,9 @@ impl FileTreeNode {
                 let (open, set_open) = RwSignal::new(is_open).split();
                 let (loaded, set_loaded) = RwSignal::new(false).split();
 
-                Effect::new_isomorphic(move |_| {
+                // TODO: turn this into isomorphic, requires some further investigation to resolve hydration issues
+                //       with lazy directories that are open on page load due to the path matching
+                Effect::new(move |_| {
                     if open.get() && !loaded.get() {
                         set_loaded.set(true);
                     }
